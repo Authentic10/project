@@ -67,7 +67,7 @@ public class Student {
     }
 
     public String getEmailAddress() {
-        return "";
+        return getFirstName()+"."+getLastName()+"@dib.com";
     }
 
     public String getPhoneNumber() {

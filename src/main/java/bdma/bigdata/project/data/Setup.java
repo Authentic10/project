@@ -1,6 +1,7 @@
 package bdma.bigdata.project.data;
 
 import bdma.bigdata.project.Namespace;
+import bdma.bigdata.project.data.Configuration;
 import bdma.bigdata.project.data.random.Course;
 import bdma.bigdata.project.data.random.Instructor;
 import bdma.bigdata.project.data.random.Student;
@@ -8,6 +9,7 @@ import bdma.bigdata.project.data.util.Random;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
+
 
 import java.io.IOException;
 import java.util.*;
@@ -45,11 +47,12 @@ public class Setup {
                 admin.deleteTable(tableName);
             } catch (Exception ignored) {
             }
-            HTableDescriptor htd = new HTableDescriptor(tableName);
+            TableDescriptorBuilder tdb = TableDescriptorBuilder.newBuilder(tableName);
             for (String familyName : families.split(" ")) {
-                htd.addFamily(new HColumnDescriptor(familyName));
+                ColumnFamilyDescriptorBuilder cdb = ColumnFamilyDescriptorBuilder.newBuilder(Bytes.toBytes(familyName));
+                tdb.setColumnFamily(cdb.build());
             }
-            admin.createTable(htd);
+            admin.createTable(tdb.build());
             connection.close();
         } catch (IOException e) {
             System.err.println("Failed to create table: " + table);
@@ -79,12 +82,13 @@ public class Setup {
                     admin.deleteTable(tableName);
                 } catch (Exception ignored) {
                 }
-                HTableDescriptor htd = new HTableDescriptor(tableName);
+                TableDescriptorBuilder tdb = TableDescriptorBuilder.newBuilder(tableName);
                 for (String familyName : schemaMap.get(tableName)) {
-                    htd.addFamily(new HColumnDescriptor(familyName));
+                    ColumnFamilyDescriptorBuilder cdb = ColumnFamilyDescriptorBuilder.newBuilder(Bytes.toBytes(familyName));
+                    tdb.setColumnFamily(cdb.build());
                 }
                 try {
-                    admin.createTable(htd);
+                    admin.createTable(tdb.build());
                     System.out.println("Table created: " + tableName);
                 } catch (Exception e) {
                     System.err.println("Failed to create table: " + tableName);
@@ -107,10 +111,10 @@ public class Setup {
         try (Table table = connection.getTable(Namespace.getCourseTableName())) {
             for (Course course : Course.getPool()) {
                 Put put = new Put(Bytes.toBytes(course.getRowKey()));
-                put.addImmutable(Bytes.toBytes("#"), Bytes.toBytes("N"), Bytes.toBytes(course.getName()));
+                put.addColumn(Bytes.toBytes("#"), Bytes.toBytes("N"), Bytes.toBytes(course.getName()));
                 int n = 0;
                 for (String instructor : course.getInstructors()) {
-                    put.addImmutable(Bytes.toBytes("I"), Bytes.toBytes("" + ++n), Bytes.toBytes(instructor));
+                    put.addColumn(Bytes.toBytes("I"), Bytes.toBytes("" + ++n), Bytes.toBytes(instructor));
                 }
                 table.put(put);
             }
@@ -123,27 +127,16 @@ public class Setup {
         System.out.println("Inserting rows to table: " + Namespace.getGradeTable());
         try (Table table = connection.getTable(Namespace.getGradeTableName())) {
             for (Student student : Student.getPool()) {
-                int y = Integer.valueOf(student.getRowKey().substring(0, 4)); // Year
-                for (int p = 1; p <= Integer.valueOf(student.getProgram()); ++p) { // Program
+                int y = Integer.parseInt(student.getRowKey().substring(0, 4)); // Year
+                for (int p = 1; p <= Integer.parseInt(student.getProgram()); ++p) { // Program
                     y += p;
                     for (int s = p * 2 - 1; s <= p * 2; ++s) { // Semester
                         for (int i = 0; i < Configuration.numberCoursesPerYear / 2; ++i) {
                             String c;
-                            String rowKey;
-                            String note;
-                            Put put;
                             c = Course.getInstance().getRowKey().split("/")[0];
-                            rowKey = y + "/" + String.format("%02d", s) + "/" + student.getRowKey() + "/" + c;
-                            put = new Put(Bytes.toBytes(rowKey));
-                            note = Random.getNumber(0, 2000, 4);
-                            put.addImmutable(Bytes.toBytes("#"), Bytes.toBytes("G"), Bytes.toBytes(note));
-                            table.put(put);
+                            addCourse(table, student, y, s, c);
                             c = Course.getInstance(Course.OPTIONAL).getRowKey().split("/")[0];
-                            rowKey = y + "/" + String.format("%02d", s) + "/" + student.getRowKey() + "/" + c;
-                            put = new Put(Bytes.toBytes(rowKey));
-                            note = Random.getNumber(0, 2000, 4);
-                            put.addImmutable(Bytes.toBytes("#"), Bytes.toBytes("G"), Bytes.toBytes(note));
-                            table.put(put);
+                            addCourse(table, student, y, s, c);
                         }
                     }
                 }
@@ -151,6 +144,17 @@ public class Setup {
         } catch (Exception e) {
             System.err.println("Failed to open table: " + Namespace.getGradeTableName());
         }
+    }
+
+    private void addCourse(Table table, Student student, int y, int s, String c) throws IOException {
+        String rowKey;
+        Put put;
+        String note;
+        rowKey = y + "/" + String.format("%02d", s) + "/" + student.getRowKey() + "/" + c;
+        put = new Put(Bytes.toBytes(rowKey));
+        note = Random.getNumber(0, 2000, 4);
+        put.addColumn(Bytes.toBytes("#"), Bytes.toBytes("G"), Bytes.toBytes(note));
+        table.put(put);
     }
 
     private void insertRowsInstructor() {
@@ -166,7 +170,7 @@ public class Setup {
                     String rowKey = instructor.getName() + "/" + year;
                     Put put = new Put(Bytes.toBytes(rowKey));
                     for (String course : courses.get(year)) {
-                        put.addImmutable(Bytes.toBytes("#"), Bytes.toBytes("" + ++n), Bytes.toBytes(course));
+                        put.addColumn(Bytes.toBytes("#"), Bytes.toBytes("" + ++n), Bytes.toBytes(course));
                     }
                     table.put(put);
                 }
@@ -181,13 +185,13 @@ public class Setup {
         try (Table table = connection.getTable(Namespace.getStudentTableName())) {
             for (Student student : Student.getPool()) {
                 Put put = new Put(Bytes.toBytes(student.getRowKey()));
-                put.addImmutable(Bytes.toBytes("#"), Bytes.toBytes("F"), Bytes.toBytes(student.getFirstName()));
-                put.addImmutable(Bytes.toBytes("#"), Bytes.toBytes("L"), Bytes.toBytes(student.getLastName()));
-                put.addImmutable(Bytes.toBytes("#"), Bytes.toBytes("P"), Bytes.toBytes(student.getProgram()));
-                put.addImmutable(Bytes.toBytes("C"), Bytes.toBytes("B"), Bytes.toBytes(student.getBirthDate()));
-                put.addImmutable(Bytes.toBytes("C"), Bytes.toBytes("D"), Bytes.toBytes(student.getDomicileAddress()));
-                put.addImmutable(Bytes.toBytes("C"), Bytes.toBytes("E"), Bytes.toBytes(student.getEmailAddress()));
-                put.addImmutable(Bytes.toBytes("C"), Bytes.toBytes("P"), Bytes.toBytes(student.getPhoneNumber()));
+                put.addColumn(Bytes.toBytes("#"), Bytes.toBytes("F"), Bytes.toBytes(student.getFirstName()));
+                put.addColumn(Bytes.toBytes("#"), Bytes.toBytes("L"), Bytes.toBytes(student.getLastName()));
+                put.addColumn(Bytes.toBytes("#"), Bytes.toBytes("P"), Bytes.toBytes(student.getProgram()));
+                put.addColumn(Bytes.toBytes("C"), Bytes.toBytes("B"), Bytes.toBytes(student.getBirthDate()));
+                put.addColumn(Bytes.toBytes("C"), Bytes.toBytes("D"), Bytes.toBytes(student.getDomicileAddress()));
+                put.addColumn(Bytes.toBytes("C"), Bytes.toBytes("E"), Bytes.toBytes(student.getEmailAddress()));
+                put.addColumn(Bytes.toBytes("C"), Bytes.toBytes("P"), Bytes.toBytes(student.getPhoneNumber()));
                 table.put(put);
             }
         } catch (Exception e) {

@@ -6,3 +6,7 @@
 # Maven
 log/
 target/
+
+#Sources
+*.txt
+*.jar
