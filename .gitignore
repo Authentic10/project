@@ -10,3 +10,7 @@ target/
 #Sources
 *.txt
 *.jar
+*.class
+src/main/java/courses
+src/main/java/grades
+src/main/java/students

@@ -16,18 +16,21 @@ public class StudentDAO {
         if (students == null) {
             students = new TreeMap<>();
         }
-        for (int i = 0; i < 100; ++i) {
-            Student stu = Student.create();
-            students.put(stu.getID(), stu);
-        }
-        Student stu = Student.create("2008080888", "Iam 2008080888", "5");
-        students.put(stu.getID(), stu);
+
         return dao;
     }
 
-    public Student getStudent(String ID) {
+    public Student getStudent(String ID, String p) {
+        Student stu;
+        stu = Student.readGradesFile(ID, p);
+        students.put(stu.getID(), stu);
         if (students.containsKey(ID)) {
-            return students.get(ID);
+            Student s = students.get(ID);
+            if(s.getProgram().equals(p)){
+                return s;
+            } else {
+                return null;
+            }
         } else {
             return null;
         }

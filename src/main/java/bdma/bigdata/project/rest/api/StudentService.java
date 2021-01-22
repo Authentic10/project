@@ -25,10 +25,10 @@ public class StudentService {
     }
 
     @GET
-    @Path("/students/{id}")
+    @Path("/students/{id}/transcripts/{program}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getStudent(@PathParam("id") String ID) {
-        Student stu = sdao.getStudent(ID);
+    public Response getStudent(@PathParam("id") String ID, @PathParam("program") String program) {
+        Student stu = sdao.getStudent(ID, program);
         if (stu != null) {
             return Response.ok(stu, MediaType.APPLICATION_JSON).build();
         } else {
