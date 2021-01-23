@@ -11,9 +11,15 @@ public class Courses {
 
     private String Code;
     private String Name;
+    private float Rate;
 
     protected Courses(){
 
+    }
+
+    protected Courses(String n, float r){
+        this.Rate = r;
+        this.Name = n;
     }
 
     protected Courses(String c, String n){
@@ -21,6 +27,7 @@ public class Courses {
         this.Name = n;
     }
 
+    //Read grades based on courses
     static public HashMap<String, String> readGrades(String id){
         HashMap<String, ArrayList<String>> values;
         values = Courses.readCourses();
@@ -54,6 +61,11 @@ public class Courses {
             e.printStackTrace();
         }
 
+        return getPercentHashMap(courses);
+    }
+
+    //Calculate the percents from HashMap variable
+    static HashMap<String, String> getPercentHashMap(HashMap<String, ArrayList<Float>> courses) {
         HashMap<String, String> results = new HashMap<>();
         float sum;
         for(String key: courses.keySet()){
@@ -70,6 +82,93 @@ public class Courses {
         return results;
     }
 
+    //Read grades based on the year and  the courses
+    static public HashMap<String, String> readGradesYear(String id, String year){
+
+        HashMap<String, String> course = new HashMap<>();
+        float sum = 0;
+        int count = 0;
+        try {
+            File gradeFIle = new File("/home/hadoop/IdeaProjects/project/src/main/java/grades/part-r-00000");
+            Scanner scanner = new Scanner(gradeFIle);
+            while (scanner.hasNextLine()){
+                String line = scanner.nextLine();
+                String[] elements = line.split("\\s+");
+                String[] gradeId = elements[0].split("/");
+                if(gradeId[3].equals(id)){
+                    if(gradeId[0].equals(year)){
+                        sum+= Float.parseFloat(elements[1]);
+                        ++count;
+                    }
+                }
+            }
+            scanner.close();
+        } catch (FileNotFoundException e){
+            e.printStackTrace();
+        }
+
+        String course_name = Student.getCourseName(id);
+
+        if(sum!=0){
+            float percent = (sum)/(2000*count);
+            course.put(course_name, String.valueOf(percent).substring(0,4));
+            return course;
+        } else {
+            return null;
+        }
+    }
+
+    //Read grades based on the year and the program
+    static public  HashMap<String, Courses> readGradesProgram(String p, String year){
+
+        HashMap<String, ArrayList<Float>> courses = new HashMap<>();
+        String[] semesters = Student.semestersForProgram(p);
+        if(semesters.length==2){
+            try {
+                File gradeFIle = new File("/home/hadoop/IdeaProjects/project/src/main/java/grades/part-r-00000");
+                Scanner scanner = new Scanner(gradeFIle);
+                while (scanner.hasNextLine()){
+                    String line = scanner.nextLine();
+                    String[] elements = line.split("\\s+");
+                    String[] gradeId = elements[0].split("/");
+
+                    if(gradeId[0].equals(year)){
+                        for(int i=0; i< semesters.length; i++){
+                            if(semesters[i].equals(gradeId[1])){
+                                if (!courses.containsKey(gradeId[3])) {
+                                    courses.put(gradeId[3], new ArrayList<>());
+                                }
+                                courses.get(gradeId[3]).add(Float.parseFloat(elements[1]));
+                            }
+                        }
+                    }
+                }
+                scanner.close();
+            } catch (FileNotFoundException e){
+                e.printStackTrace();
+            }
+
+
+            HashMap<String, Courses> results = new HashMap<>();
+            float sum;
+            for(String key: courses.keySet()){
+                sum = 0;
+                int size = courses.get(key).size();
+                for(int i =0; i<size; i++){
+                    sum+= courses.get(key).get(i);
+                }
+                float mean = sum/size;
+
+                String course_name = Student.getCourseName(key);
+
+                results.put(key, new Courses(course_name, mean));
+            }
+            return results;
+        }
+        return null;
+    }
+
+    //Get all the courses
     static public HashMap<String, ArrayList<String>> readCourses(){
         HashMap<String, ArrayList<String>> courses = new HashMap<>();
         try {
@@ -109,6 +208,10 @@ public class Courses {
 
     public void setName(String name) {
         Name = name;
+    }
+
+    public float getRate() {
+        return Rate;
     }
 
 }

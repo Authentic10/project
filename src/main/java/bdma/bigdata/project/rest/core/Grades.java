@@ -19,6 +19,7 @@ public class Grades {
         this.Grade = g;
     }
 
+    //Read the grades based on semester
     static public HashMap<String, String> readGrades(String semester){
         HashMap<String, ArrayList<Float>> values = new HashMap<>();
         try {
@@ -42,19 +43,7 @@ public class Grades {
             e.printStackTrace();
         }
 
-        HashMap<String, String> results = new HashMap<>();
-        float sum;
-        for(String key: values.keySet()){
-             sum = 0;
-            int size = values.get(key).size();
-            for(int i =0; i<size; i++){
-                sum+= values.get(key).get(i);
-            }
-            float percent = (sum)/(2000*size);
-            results.put(key, String.valueOf(percent).substring(0,4));
-        }
-
-        return results;
+        return Courses.getPercentHashMap(values);
     }
 
     public String getCode() {
