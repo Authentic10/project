@@ -11,6 +11,9 @@ import javax.ws.rs.core.Response;
 import bdma.bigdata.project.rest.core.Student;
 import bdma.bigdata.project.rest.dao.StudentDAO;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 @Path("/StudentService")
 
 public class StudentService {
@@ -18,21 +21,14 @@ public class StudentService {
     private StudentDAO sdao = StudentDAO.create();
 
     @GET
-    @Path("/students")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getStudents() {
-        return Response.ok(sdao.getStudents(), MediaType.APPLICATION_JSON).build();
-    }
-
-    @GET
     @Path("/students/{id}/transcripts/{program}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getStudent(@PathParam("id") String ID, @PathParam("program") String program) {
+    public Response getStudent(@PathParam("id") String ID, @PathParam("program") String program) throws URISyntaxException {
         Student stu = sdao.getStudent(ID, program);
         if (stu != null) {
             return Response.ok(stu, MediaType.APPLICATION_JSON).build();
         } else {
-            return Response.status(Response.Status.NOT_FOUND).entity("Student not found: " + ID).build();
-        }
+            URI uri = new URI("http://localhost:8080/project_war_exploded/error404.html");
+            return Response.temporaryRedirect(uri).build();        }
     }
 }

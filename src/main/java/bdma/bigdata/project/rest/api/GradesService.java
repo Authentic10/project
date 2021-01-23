@@ -8,6 +8,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 
 
@@ -17,14 +19,13 @@ public class GradesService {
     @GET
     @Path("/rates/{s}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getRates(@PathParam("s") String s) {
-        System.out.println("SERVICES : "+s);
-        //Student stu = sdao.ge(s);
+    public Response getRates(@PathParam("s") String s) throws URISyntaxException {
         HashMap<String, String> gda = GradesDAO.getPercents(s);
         if (!gda.isEmpty()) {
             return Response.ok(gda, MediaType.APPLICATION_JSON).build();
         } else {
-            return Response.status(Response.Status.NOT_FOUND).entity("Semester not found: " + s).build();
+            URI uri = new URI("http://localhost:8080/project_war_exploded/error404.html");
+            return Response.temporaryRedirect(uri).build();
         }
     }
 }
