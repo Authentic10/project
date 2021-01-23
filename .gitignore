@@ -14,3 +14,4 @@ target/
 src/main/java/courses
 src/main/java/grades
 src/main/java/students
+src/main/java/instructors
