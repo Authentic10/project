@@ -51,7 +51,6 @@ public class StudentGrades extends Configured implements Tool {
     static class StudentGradesReducer extends Reducer<ImmutableBytesWritable, Result, Text, Text> {
         public void reduce(ImmutableBytesWritable key, Iterable<Result> values, Context context) throws IOException, InterruptedException {
             for(Result result : values){
-                //byte [] k = key.get();
                 String row_key = Bytes.toString(key.get());
                 String firstName = Bytes.toString(result.getValue(Bytes.toBytes("#"), Bytes.toBytes("F")));
                 String lastName = Bytes.toString(result.getValue(Bytes.toBytes("#"), Bytes.toBytes("L")));

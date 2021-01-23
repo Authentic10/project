@@ -18,29 +18,29 @@ import org.apache.hadoop.util.ToolRunner;
 
 import java.io.IOException;
 
-public class Grades extends Configured implements Tool {
+public class Instructors extends Configured implements Tool {
 
     public static void main(String[] args) throws Exception {
-        int exitCode = ToolRunner.run(HBaseConfiguration.create(), new Grades(), args);
+        int exitCode = ToolRunner.run(HBaseConfiguration.create(), new Instructors(), args);
         System.exit(exitCode);
     }
 
     public int run(String[] args) throws Exception {
 
-        String tableName = "21907361:G";
+        String tableName = "21907361:I";
         Scan scan = new Scan();
         Job job = Job.getInstance(getConf(), getClass().getSimpleName());
         job.setJarByClass(getClass());
-        TableMapReduceUtil.initTableMapperJob(tableName, scan, GradesMapper.class, ImmutableBytesWritable.class,
+        TableMapReduceUtil.initTableMapperJob(tableName, scan, InstructorsMapper.class, ImmutableBytesWritable.class,
                 Result.class, job);
         FileOutputFormat.setOutputPath(job, new Path(args[0]));
-        job.setReducerClass(GradesReducer.class);
+        job.setReducerClass(InstructorsReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         return job.waitForCompletion(true) ? 0 : 1;
     }
 
-    static class GradesMapper extends TableMapper<ImmutableBytesWritable, Result> {
+    static class InstructorsMapper extends TableMapper<ImmutableBytesWritable, Result> {
 
         public void map(ImmutableBytesWritable row, Result value, Context context) throws IOException, InterruptedException {
             context.write(new ImmutableBytesWritable(row), value);
@@ -48,12 +48,15 @@ public class Grades extends Configured implements Tool {
 
     }
 
-    static class GradesReducer extends Reducer<ImmutableBytesWritable, Result, Text, Text> {
+    static class InstructorsReducer extends Reducer<ImmutableBytesWritable, Result, Text, Text> {
         public void reduce(ImmutableBytesWritable key, Iterable<Result> values, Context context) throws IOException, InterruptedException {
             for(Result result : values){
                 String row_key = Bytes.toString(key.get());
-                String grade = Bytes.toString(result.getValue(Bytes.toBytes("#"), Bytes.toBytes("G")));
-                context.write(new Text(row_key), new Text(grade));
+                for(int i=1; i< 20; i++){
+                    String value = Bytes.toString(result.getValue(Bytes.toBytes("#"), Bytes.toBytes(""+i)));
+                    if(value!=null)
+                        context.write(new Text(row_key), new Text(value));
+                }
             }
         }
     }

@@ -18,8 +18,7 @@ public class GradesService {
     @Path("/rates/{s}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getRates(@PathParam("s") String s) {
-        System.out.println("SERVICES : "+s);
-        //Student stu = sdao.ge(s);
+
         HashMap<String, String> gda = GradesDAO.getPercents(s);
         if (!gda.isEmpty()) {
             return Response.ok(gda, MediaType.APPLICATION_JSON).build();

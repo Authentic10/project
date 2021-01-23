@@ -11,18 +11,14 @@ import javax.ws.rs.core.Response;
 import bdma.bigdata.project.rest.core.Student;
 import bdma.bigdata.project.rest.dao.StudentDAO;
 
+import java.util.HashMap;
+
 @Path("/StudentService")
 
 public class StudentService {
 
     private StudentDAO sdao = StudentDAO.create();
 
-    @GET
-    @Path("/students")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getStudents() {
-        return Response.ok(sdao.getStudents(), MediaType.APPLICATION_JSON).build();
-    }
 
     @GET
     @Path("/students/{id}/transcripts/{program}")
@@ -33,6 +29,18 @@ public class StudentService {
             return Response.ok(stu, MediaType.APPLICATION_JSON).build();
         } else {
             return Response.status(Response.Status.NOT_FOUND).entity("Student not found: " + ID).build();
+        }
+    }
+
+    @GET
+    @Path("/ranks/{p}/years/{year}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getRatesforProgram(@PathParam("p") String p, @PathParam("year") String year) {
+        HashMap<String, Float> sdao = StudentDAO.getStudentsRanks(p, year);
+        if (sdao!=null) {
+            return Response.ok(sdao, MediaType.APPLICATION_JSON).build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).entity("Program or year not found: ").build();
         }
     }
 }

@@ -1,9 +1,6 @@
 package bdma.bigdata.project.rest.dao;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import bdma.bigdata.project.rest.core.Student;
 
@@ -36,11 +33,10 @@ public class StudentDAO {
         }
     }
 
-    public List<Student> getStudents() {
-        List<Student> list = new ArrayList<>();
-        for (Map.Entry<String, Student> entry : students.entrySet()) {
-            list.add(entry.getValue());
-        }
-        return list;
+    static public HashMap<String, Float> getStudentsRanks(String p, String year) {
+        HashMap<String, Float> students;
+        students = Student.getStudentRanks(p, year);
+
+        return students;
     }
 }
